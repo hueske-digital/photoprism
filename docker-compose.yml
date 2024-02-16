@@ -1,0 +1,108 @@
+version: '3.5'
+
+services:
+  app:
+    image: photoprism/photoprism:latest
+    restart: unless-stopped
+    environment:
+      - PHOTOPRISM_ADMIN_USER
+      - PHOTOPRISM_ADMIN_PASSWORD
+      - PHOTOPRISM_AUTH_MODE=password
+      - PHOTOPRISM_SITE_URL
+      - PHOTOPRISM_ORIGINALS_LIMIT
+      - PHOTOPRISM_HTTP_COMPRESSION=gzip
+      - PHOTOPRISM_LOG_LEVEL=warning
+      - PHOTOPRISM_READONLY
+      - PHOTOPRISM_DATABASE_DRIVER=mysql
+      - PHOTOPRISM_DATABASE_SERVER=db:3306
+      - PHOTOPRISM_DATABASE_NAME=photoprism
+      - PHOTOPRISM_DATABASE_USER=photoprism
+      - PHOTOPRISM_DATABASE_PASSWORD=photoprism
+      - PHOTOPRISM_SITE_CAPTION
+      - PHOTOPRISM_SITE_DESCRIPTION
+      - PHOTOPRISM_SITE_AUTHOR
+      - PHOTOPRISM_WORKERS
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    working_dir: "/photoprism"
+    depends_on:
+      - db
+    volumes:
+      - app_data:/photoprism/storage
+      - app_originals:/photoprism/originals
+      - app_import:/photoprism/import
+    networks:
+      default:
+      proxy_apps:
+    labels:
+      backups: "true"
+      ofelia.enabled: "true"
+      ofelia.job-exec.importcron.schedule: "@every 25m"
+      ofelia.job-exec.importcron.no-overlap: "true"
+      ofelia.job-exec.importcron.command: "photoprism import /photoprism/import"
+      ofelia.job-exec.indexcron.schedule: "@every 3h"
+      ofelia.job-exec.indexcron.no-overlap: "true"
+      ofelia.job-exec.indexcron.command: "photoprism index --cleanup"
+    dns:
+      - "1.1.1.1"
+      - "1.0.0.1"
+  cron:
+    image: mcuadros/ofelia:latest
+    command: daemon --docker
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      - MARIADB_AUTO_UPGRADE=1
+      - MARIADB_INITDB_SKIP_TZINFO=1
+      - MARIADB_DATABASE=photoprism
+      - MARIADB_USER=photoprism
+      - MARIADB_PASSWORD=photoprism
+      - MARIADB_ROOT_PASSWORD=photoprism
+    networks:
+      default:
+    labels:
+      backups: "true"
+    dns:
+      - "1.1.1.1"
+      - "1.0.0.1"
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    command: mariadbd --innodb-buffer-pool-size=512M --transaction-isolation=READ-COMMITTED --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-connections=512 --innodb-rollback-on-timeout=OFF --innodb-lock-wait-timeout=120
+  sftp:
+    image: atmoz/sftp:alpine
+    restart: unless-stopped
+    volumes:
+      - app_import:/home/photoprism/import
+      - $PWD/keys:/etc/ssh:ro
+    ports:
+      - "2223:22"
+    environment:
+      - SFTP_PASSWORD
+    networks:
+      default:
+    command: photoprism:${SFTP_PASSWORD}:1000
+    # see https://github.com/atmoz/sftp/issues/341#issuecomment-1509470933
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+
+volumes:
+  app_data:
+  app_originals:
+  app_import:
+  db_data:
+
+networks:
+  proxy_apps:
+    name: proxy_apps
+    external: true
