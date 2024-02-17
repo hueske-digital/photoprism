@@ -36,7 +36,6 @@ services:
       default:
       proxy_apps:
     labels:
-      backups: "true"
       ofelia.enabled: "true"
       ofelia.job-exec.importcron.schedule: "@every 25m"
       ofelia.job-exec.importcron.no-overlap: "true"
@@ -69,7 +68,6 @@ services:
     networks:
       default:
     labels:
-      backups: "true"
       ofelia.enabled: "true"
       ofelia.job-exec.backupcron.schedule: "0 0 1 * * *"
       ofelia.job-exec.backupcron.command: "sh /scripts/backup.sh"
