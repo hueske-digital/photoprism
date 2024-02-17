@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/mysql
-      - $PWD/backup.sh:/scripts/backup.sh
+      - $PWD/backup.sh:/scripts/backup.sh:ro
     environment:
       - MARIADB_AUTO_UPGRADE=1
       - MARIADB_INITDB_SKIP_TZINFO=1
