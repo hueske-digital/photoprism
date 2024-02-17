@@ -58,6 +58,7 @@ services:
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/mysql
+      - $PWD/backup.sh:/scripts/backup.sh
     environment:
       - MARIADB_AUTO_UPGRADE=1
       - MARIADB_INITDB_SKIP_TZINFO=1
@@ -69,6 +70,9 @@ services:
       default:
     labels:
       backups: "true"
+      ofelia.enabled: "true"
+      ofelia.job-exec.backupcron.schedule: "0 0 1 * * *"
+      ofelia.job-exec.backupcron.command: "sh /scripts/backup.sh"
     dns:
       - "1.1.1.1"
       - "1.0.0.1"
