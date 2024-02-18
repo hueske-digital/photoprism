@@ -37,27 +37,16 @@ services:
       proxy_apps:
     labels:
       ofelia.enabled: "true"
-      ofelia.job-exec.importcron.schedule: "@every 25m"
-      ofelia.job-exec.importcron.no-overlap: "true"
-      ofelia.job-exec.importcron.command: "photoprism import /photoprism/import"
-      ofelia.job-exec.indexcron.schedule: "@every 3h"
-      ofelia.job-exec.indexcron.no-overlap: "true"
-      ofelia.job-exec.indexcron.command: "photoprism index --cleanup"
-    dns:
-      - "1.1.1.1"
-      - "1.0.0.1"
-  cron:
-    image: mcuadros/ofelia:latest
-    command: daemon --docker -f label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      ofelia.job-exec.photoprismimportcron.schedule: "@every 25m"
+      ofelia.job-exec.photoprismimportcron.command: "photoprism import /photoprism/import"
+      ofelia.job-exec.photoprismindexcron.schedule: "@every 3h"
+      ofelia.job-exec.photoprismindexcron.command: "photoprism index --cleanup"
+
   db:
     image: mariadb:11
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/mysql
-      - $PWD/backup.sh:/scripts/backup.sh:ro
     environment:
       - MARIADB_AUTO_UPGRADE=1
       - MARIADB_INITDB_SKIP_TZINFO=1
@@ -68,16 +57,15 @@ services:
     networks:
       default:
     labels:
+      ofelia.restart: "true"
       ofelia.enabled: "true"
-      ofelia.job-exec.backupcron.schedule: "0 0 1 * * *"
-      ofelia.job-exec.backupcron.command: "sh /scripts/backup.sh"
-    dns:
-      - "1.1.1.1"
-      - "1.0.0.1"
+      ofelia.job-exec.photoprismdbbackup.schedule: "0 0 1 * * *"
+      ofelia.job-exec.photoprismdbbackup.command: "sh -c 'mariadb-dump --user=photoprism --password=photoprism photoprism > /var/lib/mysql/backup.sql'"
     security_opt:
       - seccomp:unconfined
       - apparmor:unconfined
     command: mariadbd --innodb-buffer-pool-size=512M --transaction-isolation=READ-COMMITTED --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-connections=512 --innodb-rollback-on-timeout=OFF --innodb-lock-wait-timeout=120
+
   sftp:
     image: atmoz/sftp:alpine
     restart: unless-stopped
@@ -96,7 +84,6 @@ services:
       nofile:
         soft: 65536
         hard: 65536
-
 
 volumes:
   app_data:
