@@ -33,7 +33,7 @@ services:
       - app_originals:/photoprism/originals
       - app_import:/photoprism/import
     networks:
-      default:
+      app_db:
       proxy_apps:
     labels:
       ofelia.enabled: "true"
@@ -55,7 +55,7 @@ services:
       - MARIADB_PASSWORD=photoprism
       - MARIADB_ROOT_PASSWORD=photoprism
     networks:
-      default:
+      app_db:
     labels:
       ofelia.restart: "true"
       ofelia.enabled: "true"
@@ -92,6 +92,7 @@ volumes:
   db_data:
 
 networks:
+  app_db:
   proxy_apps:
     name: proxy_apps
     external: true
