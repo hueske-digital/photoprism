@@ -1,4 +1,4 @@
-version: '3.5'
+version: '3.8'
 
 services:
   app:
@@ -33,15 +33,26 @@ services:
       - app_originals:/photoprism/originals
       - app_import:/photoprism/import
     networks:
-      app_db:
+      default:
       proxy_apps:
     labels:
+      backups: "true"
       ofelia.enabled: "true"
-      ofelia.job-exec.photoprismimportcron.schedule: "@every 25m"
-      ofelia.job-exec.photoprismimportcron.command: "photoprism import /photoprism/import"
-      ofelia.job-exec.photoprismindexcron.schedule: "@every 3h"
-      ofelia.job-exec.photoprismindexcron.command: "photoprism index --cleanup"
-
+      ofelia.job-exec.importcron.schedule: "@every 25m"
+      ofelia.job-exec.importcron.no-overlap: "true"
+      ofelia.job-exec.importcron.command: "photoprism import /photoprism/import"
+      ofelia.job-exec.indexcron.schedule: "@every 3h"
+      ofelia.job-exec.indexcron.no-overlap: "true"
+      ofelia.job-exec.indexcron.command: "photoprism index --cleanup"
+    dns:
+      - "1.1.1.1"
+      - "1.0.0.1"
+  cron:
+    image: mcuadros/ofelia:latest
+    command: daemon --docker
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
   db:
     image: mariadb:11
     restart: unless-stopped
@@ -55,35 +66,32 @@ services:
       - MARIADB_PASSWORD=photoprism
       - MARIADB_ROOT_PASSWORD=photoprism
     networks:
-      app_db:
+      default:
     labels:
-      ofelia.restart: "true"
-      ofelia.enabled: "true"
-      ofelia.job-exec.photoprismdbbackup.schedule: "0 0 1 * * *"
-      ofelia.job-exec.photoprismdbbackup.command: "sh -c 'mariadb-dump --user=photoprism --password=photoprism photoprism > /var/lib/mysql/backup.sql'"
+      backups: "true"
+    dns:
+      - "1.1.1.1"
+      - "1.0.0.1"
     security_opt:
       - seccomp:unconfined
       - apparmor:unconfined
     command: mariadbd --innodb-buffer-pool-size=512M --transaction-isolation=READ-COMMITTED --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-connections=512 --innodb-rollback-on-timeout=OFF --innodb-lock-wait-timeout=120
-
   sftp:
-    image: atmoz/sftp:alpine
+    image: ghcr.io/hueske-digital/sftp:latest
     restart: unless-stopped
     volumes:
       - app_import:/home/photoprism/import
-      - $PWD/keys:/etc/ssh:ro
+      - $PWD/publickeys:/home/photoprism/.ssh/keys
     ports:
       - "2223:22"
-    environment:
-      - SFTP_PASSWORD
     networks:
       default:
-    command: photoprism:${SFTP_PASSWORD}:1000
-    # see https://github.com/atmoz/sftp/issues/341#issuecomment-1509470933
+    command: photoprism::1000
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
+
 
 volumes:
   app_data:
@@ -92,7 +100,6 @@ volumes:
   db_data:
 
 networks:
-  app_db:
   proxy_apps:
     name: proxy_apps
     external: true
