@@ -33,26 +33,14 @@ services:
       - app_originals:/photoprism/originals
       - app_import:/photoprism/import
     networks:
-      default:
+      app_db:
       proxy_apps:
     labels:
-      backups: "true"
       ofelia.enabled: "true"
-      ofelia.job-exec.importcron.schedule: "@every 25m"
-      ofelia.job-exec.importcron.no-overlap: "true"
-      ofelia.job-exec.importcron.command: "photoprism import /photoprism/import"
-      ofelia.job-exec.indexcron.schedule: "@every 3h"
-      ofelia.job-exec.indexcron.no-overlap: "true"
-      ofelia.job-exec.indexcron.command: "photoprism index --cleanup"
-    dns:
-      - "1.1.1.1"
-      - "1.0.0.1"
-  cron:
-    image: mcuadros/ofelia:latest
-    command: daemon --docker
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      ofelia.job-exec.photoprismimportcron.schedule: "@every 25m"
+      ofelia.job-exec.photoprismimportcron.command: "photoprism import /photoprism/import"
+      ofelia.job-exec.photoprismindexcron.schedule: "@every 3h"
+      ofelia.job-exec.photoprismindexcron.command: "photoprism index --cleanup"
   db:
     image: mariadb:11
     restart: unless-stopped
@@ -66,12 +54,12 @@ services:
       - MARIADB_PASSWORD=photoprism
       - MARIADB_ROOT_PASSWORD=photoprism
     networks:
-      default:
+      app_db:
     labels:
-      backups: "true"
-    dns:
-      - "1.1.1.1"
-      - "1.0.0.1"
+      ofelia.restart: "true"
+      ofelia.enabled: "true"
+      ofelia.job-exec.photoprismdbbackup.schedule: "0 0 1 * * *"
+      ofelia.job-exec.photoprismdbbackup.command: "sh -c 'mariadb-dump --user=photoprism --password=photoprism photoprism > /var/lib/mysql/backup.sql'"
     security_opt:
       - seccomp:unconfined
       - apparmor:unconfined
@@ -100,6 +88,7 @@ volumes:
   db_data:
 
 networks:
+  app_db:
   proxy_apps:
     name: proxy_apps
     external: true
