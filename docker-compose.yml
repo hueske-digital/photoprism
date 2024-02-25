@@ -69,14 +69,14 @@ services:
     restart: unless-stopped
     volumes:
       - sftp_keys:/etc/ssh
-      - app_import:/home/photoprism/import
-      - $PWD/publickeys:/home/photoprism/.ssh/keys:ro
+      - app_import:/home/${SFTP_USERNAME}/import
+      - $PWD/publickeys:/home/${SFTP_USERNAME}/.ssh/keys:ro
     ports:
       - "2223:22"
     networks:
       default:
     # Empty password = only allow publickeys
-    command: photoprism::1000
+    command: ${SFTP_USERNAME}:${SFTP_PASSWORD}:1000
     ulimits:
       nofile:
         soft: 65536
