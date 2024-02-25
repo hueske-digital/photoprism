@@ -69,7 +69,7 @@ services:
     restart: unless-stopped
     volumes:
       - app_import:/home/photoprism/import
-      - $PWD/publickeys:/home/photoprism/.ssh/keys
+      - $PWD/publickeys:/home/photoprism/.ssh/keys:ro
     ports:
       - "2223:22"
     networks:
