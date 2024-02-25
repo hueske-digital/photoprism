@@ -74,6 +74,7 @@ services:
       - "2223:22"
     networks:
       default:
+    # Empty password = only allow publickeys
     command: photoprism::1000
     ulimits:
       nofile:
