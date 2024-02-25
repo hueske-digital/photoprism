@@ -68,6 +68,7 @@ services:
     image: ghcr.io/hueske-digital/sftp:latest
     restart: unless-stopped
     volumes:
+      - sftp_keys:/etc/ssh
       - app_import:/home/photoprism/import
       - $PWD/publickeys:/home/photoprism/.ssh/keys:ro
     ports:
@@ -87,6 +88,7 @@ volumes:
   app_originals:
   app_import:
   db_data:
+  sftp_keys:
 
 networks:
   app_db:
