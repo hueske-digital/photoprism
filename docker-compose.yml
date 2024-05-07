@@ -35,6 +35,7 @@ services:
     networks:
       app_db:
       proxy_apps:
+    cpus: 1.0
     labels:
       ofelia.enabled: "true"
       ofelia.job-exec.photoprismimportcron.schedule: "@every 25m"
